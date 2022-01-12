@@ -11,4 +11,9 @@ COPY Cargo.lock Cargo.lock
 COPY Cargo.toml Cargo.toml
 COPY config.json config.json
 
+RUN adduser --disabled-password --gecos "" iroha && \
+   chown -R iroha ${LOAD_DIR}
+
+USER iroha
+
 CMD ["cargo", "run"]

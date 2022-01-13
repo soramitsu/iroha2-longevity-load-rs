@@ -82,12 +82,14 @@ fn main() {
     });
     thread::spawn(move || {
         let _e = ExitOnPanic;
-        for _ in 0..1000 {
+        loop {
             status_clone_1.write().unwrap().latest_sent_at = Some(Utc::now());
             status_clone_1.write().unwrap().txs_sent += 1;
             client_clone.submit_all(vec![]).unwrap();
             thread::sleep(Duration::from_secs_f64(1_f64 / args.tps));
         }
     });
-    rouille::start_server(args.address, move |_| Response::json(&*status.read().unwrap()))
+    rouille::start_server(args.address, move |_| {
+        Response::json(&*status.read().unwrap())
+    })
 }

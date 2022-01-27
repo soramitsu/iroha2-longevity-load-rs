@@ -1,6 +1,6 @@
 ## About
 
-This is a testing script that generates empty transactions, with given `TPS` and reports status at a given `address`.
+This is a script that generates empty transactions, given a `TPS` rate. It reports status to a given `address`.
 It was mainly created to test longevity stand for Iroha2.
 
 ## Usage

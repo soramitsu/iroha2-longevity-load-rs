@@ -20,25 +20,6 @@ Clone *this* repository
 git clone https://github.com/soramitsu/iroha2-longevity-load-rs
 ```
 
-Clone Iroha
-
-```bash
-git clone https://github.com/hyperledger/iroha.git
-```
-
-and check it out to the current release branch: `iroha2` (or `iroha2-dev`):
-
-```bash
-cd iroha
-git checkout iroha2
-```
-
-return to the root directory
-
-```bash
-cd ../iroha2-longevity-load-rs
-```
-
 
 ### Running
 

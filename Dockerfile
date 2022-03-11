@@ -6,8 +6,7 @@ RUN mkdir ${LOAD_DIR}
 
 WORKDIR ${LOAD_DIR}
 
-COPY src src 
-COPY Cargo.lock Cargo.lock
+COPY src src
 COPY Cargo.toml Cargo.toml
 COPY config.json config.json
 

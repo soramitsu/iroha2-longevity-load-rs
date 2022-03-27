@@ -2,7 +2,7 @@
 
 use chrono::prelude::*;
 use iroha_client::{client::Client, Configuration};
-use iroha_data_model::events::prelude::*;
+use iroha_data_model::{events::prelude::*, prelude::{AccountId, Instruction, RegisterBox, NewAccount}, IdentifiableBox};
 use rouille::Response;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -35,6 +35,8 @@ struct Args {
     pub tps: f64,
     #[structopt(long, default_value = "127.0.0.1:8084")]
     pub address: String,
+    #[structopt(long, default_value = "100")]
+    pub accounts: i64
 }
 
 #[derive(Debug, Serialize, Deserialize, Default)]
@@ -42,6 +44,7 @@ struct Status {
     txs_committed: usize,
     txs_rejected: usize,
     txs_sent: usize,
+    txs_unknown: usize,
     latest_committed_transaction: Option<DateTime<Utc>>,
     latest_rejected_transaction: Option<DateTime<Utc>>,
     latest_sent_at: Option<DateTime<Utc>>,
@@ -63,7 +66,7 @@ fn main() {
             PipelineEntityType::Transaction,
         ));
         for event in client.listen_for_events(event_filter).unwrap() {
-            if let Event::Pipeline(event) = event.unwrap() {
+            if let Ok(Event::Pipeline(event)) = event {
                 match event.status {
                     PipelineStatus::Validating => {}
                     PipelineStatus::Rejected(_) => {
@@ -77,16 +80,35 @@ fn main() {
                         status_clone_2.write().unwrap().txs_committed += 1;
                     }
                 }
+            } else {
+                status_clone_2.write().unwrap().txs_unknown+=1;
             }
         }
     });
     thread::spawn(move || {
         let _e = ExitOnPanic;
+        let mut current_accounts = 0;
+        let interval = Duration::from_secs_f64(1_f64 / args.tps);
+        while current_accounts < args.accounts {
+            status_clone_1.write().unwrap().latest_sent_at = Some(Utc::now());
+            status_clone_1.write().unwrap().txs_sent +=1;
+            let new_account = AccountId::new(&format!("alice-{}", current_accounts), "wonderland").unwrap();
+            if let Ok(_) = client_clone.submit_all(vec![
+                Instruction::Register(RegisterBox::new(IdentifiableBox::from(NewAccount::new(new_account))))
+            ]) {
+                thread::sleep(interval);
+                current_accounts += 1;
+            }
+            else {
+                println!("Submit failed");
+                thread::sleep(Duration::from_secs(1));
+            }
+        }
         loop {
             status_clone_1.write().unwrap().latest_sent_at = Some(Utc::now());
             status_clone_1.write().unwrap().txs_sent += 1;
             client_clone.submit_all(vec![]).unwrap();
-            thread::sleep(Duration::from_secs_f64(1_f64 / args.tps));
+            thread::sleep(interval);
         }
     });
     rouille::start_server(args.address, move |_| {

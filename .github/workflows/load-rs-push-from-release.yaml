@@ -1,4 +1,4 @@
-name: load-rs-ci-cd-master
+name: load-rs-ci:release
 
 on:
   workflow_dispatch:
@@ -30,7 +30,7 @@ jobs:
           push: true
           tags: soramitsu/iroha2-longevity-load-rs:release
 
-      - name: Synchronize with iroha2:dev repo
+      - name: Synchronize with iroha2 repo
         run: |
           echo "response about the workflow end"
           sleep 10s

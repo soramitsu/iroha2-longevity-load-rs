@@ -1,9 +1,7 @@
 name: load-rs-ci-cd-master
 
 on:
-  push:
-    branches:
-      - 'master'
+  workflow_dispatch:
 
 jobs:
   load-rs-dockerhub-master:
@@ -31,5 +29,10 @@ jobs:
           context: .
           push: true
           tags: soramitsu/iroha2-longevity-load-rs:release
+
+      - name: Synchronize with iroha2:dev repo
+        run: |
+          echo "response about the workflow end"
+          sleep 10s
 
           

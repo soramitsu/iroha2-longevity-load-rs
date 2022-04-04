@@ -1,10 +1,7 @@
-name: load-rs-ci-from-iroha2:dev
+name: load-rs-ci:dev
 
 on:
   workflow_dispatch:
-  # push:
-  #   branches:
-  #     - 'master'
 
 jobs:
   load-rs-dockerhub-dev:
@@ -38,5 +35,5 @@ jobs:
           
       - name: Synchronize with iroha2:dev repo
         run: |
-          echo "Wait to trigger a build"
+          echo "response about the workflow end"
           sleep 10s

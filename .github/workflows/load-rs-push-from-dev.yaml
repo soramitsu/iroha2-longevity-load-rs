@@ -39,4 +39,4 @@ jobs:
       - name: Synchronize with iroha2:dev repo
         run: |
           echo "Wait to trigger a build"
-          sleep 30s
+          sleep 10s

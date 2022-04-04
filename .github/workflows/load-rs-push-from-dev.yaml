@@ -1,7 +1,7 @@
 name: load-rs-ci-from-iroha2:dev
 
 on:
-  workflow_dispatch:
+  repository_dispatch:
   # push:
   #   branches:
   #     - 'master'

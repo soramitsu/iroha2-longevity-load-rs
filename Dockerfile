@@ -1,4 +1,4 @@
-FROM rust:1.57
+FROM rust:1.60
 
 ENV LOAD_DIR=/opt/iroha2_load_rs
 

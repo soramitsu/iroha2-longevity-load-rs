@@ -2,7 +2,7 @@
 
 use chrono::prelude::*;
 use iroha_client::{client::Client, Configuration};
-use iroha_data_model::{events::prelude::*, prelude::{AccountId, Instruction, RegisterBox, NewAccount}, IdentifiableBox};
+use iroha_data_model::{events::prelude::*, prelude::{AccountId, Instruction, RegisterBox, Account}, IdentifiableBox};
 use rouille::Response;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -62,9 +62,7 @@ fn main() {
     let mut client_clone = client.clone();
     thread::spawn(move || {
         let _e = ExitOnPanic;
-        let event_filter = EventFilter::Pipeline(PipelineEventFilter::by_entity(
-            PipelineEntityType::Transaction,
-        ));
+        let event_filter = EventFilter::Pipeline(PipelineEventFilter::new());
         for event in client.listen_for_events(event_filter).unwrap() {
             if let Ok(Event::Pipeline(event)) = event {
                 match event.status {
@@ -92,9 +90,9 @@ fn main() {
         while current_accounts < args.accounts {
             status_clone_1.write().unwrap().latest_sent_at = Some(Utc::now());
             status_clone_1.write().unwrap().txs_sent +=1;
-            let new_account = AccountId::new(&format!("alice-{}", current_accounts), "wonderland").unwrap();
+            let new_account: AccountId = format!("alice{}@wonderland", current_accounts).parse().unwrap();
             if let Ok(_) = client_clone.submit_all(vec![
-                Instruction::Register(RegisterBox::new(IdentifiableBox::from(NewAccount::new(new_account))))
+                Instruction::Register(RegisterBox::new(IdentifiableBox::from(Account::new(new_account, []))))
             ]) {
                 thread::sleep(interval);
                 current_accounts += 1;

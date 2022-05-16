@@ -50,7 +50,7 @@ struct Status {
     latest_sent_at: Option<DateTime<Utc>>,
 }
 
-fn main() {
+fn main() -> color_eyre::eyre::Result<()>{
     let args = Args::from_args();
     let status = Arc::new(RwLock::new(Status::default()));
     let status_clone_1 = Arc::clone(&status);
@@ -58,11 +58,11 @@ fn main() {
     let config_file = File::open("config.json").expect("`config.json` not found.");
     let cfg: Configuration =
         serde_json::from_reader(config_file).expect("Failed to deserialize configuration.");
-    let mut client = Client::new(&cfg);
+    let mut client = Client::new(&cfg)?;
     let mut client_clone = client.clone();
     thread::spawn(move || {
         let _e = ExitOnPanic;
-        let event_filter = EventFilter::Pipeline(PipelineEventFilter::new());
+        let event_filter = FilterBox::Pipeline(PipelineEventFilter::new());
         for event in client.listen_for_events(event_filter).unwrap() {
             if let Ok(Event::Pipeline(event)) = event {
                 match event.status {

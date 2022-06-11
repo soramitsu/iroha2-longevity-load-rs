@@ -13,8 +13,7 @@ ENV PORT=8084
 
 ENV LOAD_DIR=/opt/iroha2_load_rs
 
-RUN set -ex && \
-    apk --update --no-cache add ca-certificates && \
+RUN apk --update --no-cache add ca-certificates && \
     adduser --disabled-password --gecos "" iroha --shell /bin/bash --home /app && \
     mkdir -p ${LOAD_DIR}
 

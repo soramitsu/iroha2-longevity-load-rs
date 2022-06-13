@@ -7,7 +7,7 @@ It was mainly created to test longevity stand for Iroha2.
 
 ### Prerequisites
 
-1. Rust 1.57.0 ([Installation guide](https://www.rust-lang.org/tools/install))
+1. Rust 1.60.0 ([Installation guide](https://www.rust-lang.org/tools/install))
 2. Edit `config.json` depending on your setup
 3. Network should be started and have committed a genesis block
 4. Have the Iroha repository locally.

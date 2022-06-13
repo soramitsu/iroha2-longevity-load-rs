@@ -1,0 +1,22 @@
+version: 2
+
+updates:
+  # Maintain docker dependencies
+  - package-ecosystem: "docker"
+    schedule:
+      interval: "weekly"
+    target-branch: "master"
+    directory: "/"
+
+  # Maintain cargo dependencies
+  - package-ecosystem: "cargo"
+    schedule:
+      interval: "daily"
+    target-branch: "dev"
+    directory: "/"
+
+  - package-ecosystem: "cargo"
+    schedule:
+      interval: "daily"
+    target-branch: "release"
+    directory: "/"

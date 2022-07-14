@@ -2,7 +2,11 @@
 
 use chrono::prelude::*;
 use iroha_client::{client::Client, Configuration};
-use iroha_data_model::{events::prelude::*, prelude::{AccountId, Instruction, RegisterBox, Account}, IdentifiableBox};
+use iroha_data_model::{
+    events::prelude::*,
+    prelude::{Account, AccountId, Instruction, RegisterBox},
+    IdentifiableBox,
+};
 use rouille::Response;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -13,6 +17,8 @@ use std::{
     time::Duration,
 };
 use structopt::StructOpt;
+use tracing::{info, Level, debug, warn};
+use tracing_subscriber::FmtSubscriber;
 
 struct ExitOnPanic;
 
@@ -36,7 +42,7 @@ struct Args {
     #[structopt(long, default_value = "127.0.0.1:8084")]
     pub address: String,
     #[structopt(long, default_value = "100")]
-    pub accounts: i64
+    pub accounts: i64,
 }
 
 #[derive(Debug, Serialize, Deserialize, Default)]
@@ -50,66 +56,112 @@ struct Status {
     latest_sent_at: Option<DateTime<Utc>>,
 }
 
-fn main() -> color_eyre::eyre::Result<()>{
+fn main() -> color_eyre::eyre::Result<()> {
+    info!("Welcome to the Iroha 2 longevity load script");
+    let subscriber = FmtSubscriber::builder()
+        .with_max_level(Level::DEBUG).finish();
+    tracing::subscriber::set_global_default(subscriber).expect("Failed to init logging");
+    info!("Staring load script");
     let args = Args::from_args();
     let status = Arc::new(RwLock::new(Status::default()));
     let status_clone_1 = Arc::clone(&status);
     let status_clone_2 = Arc::clone(&status);
     let config_file = File::open("config.json").expect("`config.json` not found.");
+    info!("Reading config file");
     let cfg: Configuration =
         serde_json::from_reader(config_file).expect("Failed to deserialize configuration.");
-    let mut client = Client::new(&cfg)?;
-    let mut client_clone = client.clone();
-    thread::spawn(move || {
+    warn!("No status updates are given in the logs. To access that information please use `curl -X GET {} -i", args.address);
+
+    info!("Reading configuration finished");
+    debug!("Configuration {:#?}", cfg);
+    let client = Client::new(&cfg)?;
+    let client_clone = client.clone();
+    info!("Spawning clients");
+    thread::Builder::new().name("event_listener".to_owned()).spawn(move || {
         let _e = ExitOnPanic;
+        debug!("ExitOnPanic installed");
         let event_filter = FilterBox::Pipeline(PipelineEventFilter::new());
-        for event in client.listen_for_events(event_filter).unwrap() {
+        for event in client
+            .listen_for_events(event_filter)
+            .expect("Failed to listen for events")
+        {
             if let Ok(Event::Pipeline(event)) = event {
                 match event.status {
                     PipelineStatus::Validating => {}
                     PipelineStatus::Rejected(_) => {
-                        status_clone_2.write().unwrap().latest_rejected_transaction =
-                            Some(Utc::now());
-                        status_clone_2.write().unwrap().txs_rejected += 1;
+                        status_clone_2
+                            .write()
+                            .expect("Failed to lock to write rejection timestamp to status")
+                            .latest_rejected_transaction = Some(Utc::now());
+                        status_clone_2
+                            .write()
+                            .expect("Failed to lock to write rejection increment to status")
+                            .txs_rejected += 1;
                     }
                     PipelineStatus::Committed => {
-                        status_clone_2.write().unwrap().latest_committed_transaction =
-                            Some(Utc::now());
-                        status_clone_2.write().unwrap().txs_committed += 1;
+                        status_clone_2
+                            .write()
+                            .expect("Failed to lock to write commit timestamp to status")
+                            .latest_committed_transaction = Some(Utc::now());
+                        status_clone_2
+                            .write()
+                            .expect("Failed to lock to write commit increment to status")
+                            .txs_committed += 1;
                     }
                 }
             } else {
-                status_clone_2.write().unwrap().txs_unknown+=1;
+                warn!("TX with unknown status");
+                status_clone_2
+                    .write()
+                    .expect("Failed to lock to write unknown status")
+                    .txs_unknown += 1;
             }
         }
-    });
-    thread::spawn(move || {
+    }).expect("Failed to spawn");
+    info!("First client thread spawned");
+    thread::Builder::new().name("transaction_sender".to_owned()).spawn(move || {
         let _e = ExitOnPanic;
         let mut current_accounts = 0;
         let interval = Duration::from_secs_f64(1_f64 / args.tps);
         while current_accounts < args.accounts {
-            status_clone_1.write().unwrap().latest_sent_at = Some(Utc::now());
-            status_clone_1.write().unwrap().txs_sent +=1;
-            let new_account: AccountId = format!("alice{}@wonderland", current_accounts).parse().unwrap();
-            if let Ok(_) = client_clone.submit_all(vec![
-                Instruction::Register(RegisterBox::new(IdentifiableBox::from(Account::new(new_account, []))))
-            ]) {
+            status_clone_1
+                .write()
+                .expect("Failed to lock to write latest_sent_at")
+                .latest_sent_at = Some(Utc::now());
+            status_clone_1
+                .write()
+                .expect("Failed to lock to increment txs_sent")
+                .txs_sent += 1;
+            let new_account: AccountId = format!("alice{}@wonderland", current_accounts)
+                .parse()
+                .expect("Failed to parse `alice` clone");
+            if let Ok(_) = client_clone.submit_all(vec![Instruction::Register(RegisterBox::new(
+                IdentifiableBox::from(Account::new(new_account, [])),
+            ))]) {
                 thread::sleep(interval);
                 current_accounts += 1;
-            }
-            else {
+            } else {
                 println!("Submit failed");
                 thread::sleep(Duration::from_secs(1));
             }
         }
         loop {
-            status_clone_1.write().unwrap().latest_sent_at = Some(Utc::now());
-            status_clone_1.write().unwrap().txs_sent += 1;
-            client_clone.submit_all(vec![]).unwrap();
+            status_clone_1
+                .write()
+                .expect("Failed to lock to write latest empty sent at")
+                .latest_sent_at = Some(Utc::now());
+            status_clone_1
+                .write()
+                .expect("Failed to lock to write latest empty incrment")
+                .txs_sent += 1;
+            client_clone
+                .submit_all(vec![])
+                .expect("Failed to submit empty ISI");
             thread::sleep(interval);
         }
-    });
+    }).expect("Failed to spawn");
+    info!("Second thread is spawned. Starting server");
     rouille::start_server(args.address, move |_| {
-        Response::json(&*status.read().unwrap())
-    })
+        Response::json(&*status.read().expect("Failed to read json response"))
+    });
 }

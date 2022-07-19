@@ -1,0 +1,47 @@
+name: load-rs::bump-dependencies
+#on: [push, pull_request]
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+
+# on:
+#   workflow_dispatch:
+
+env:
+  VERSION_URL: 'https://raw.githubusercontent.com/hyperledger/iroha/iroha2/data_model/Cargo.toml'
+
+jobs:
+  bump-iroha2-dev:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Grep iroha2 version from hyperledger repository
+        uses: mathiasvr/command-output@v1
+        id: new_version
+        with:
+          run: curl -s ${{ env.VERSION_URL }} | sed -ne '3p' | tr -d '\n'
+      - name: Find and Replace
+        uses: jacobtomlinson/gha-find-replace@v2
+        with:
+          find: version = "2.0.0-pre-rc.*
+          replace: "${{ steps.new_version.outputs.stdout }}"
+          include: "Cargo.toml"
+          regex: true
+      - name: Push changes
+        uses: devops-infra/action-commit-push@v0.9.0
+        with:
+          github_token: "${{ secrets.GITHUB_TOKEN }}"
+          add_timestamp: true
+          commit_message: "bump iroha2 versions in Cargo.toml"
+          target_branch: bump-iroha2-version
+      - name: Create pull request
+        uses: devops-infra/action-pull-request@v0.5.0
+        with:
+          title: "Update iroha2 dependencies to ${{ steps.new_version.outputs.stdout }}"
+          body: "**Automated pull request**<br><br><p>Update `iroha client` and `iroha_data_model` dependencies from <a href=${{ env.VERSION_URL }}>Hyperledger repository</a></p>"
+          assignee: ${{ github.actor }}
+          reviewer: BAStos525
+          label: iroha2,longevity
+        #  target_branch: release
+          github_token: ${{ secrets.GITHUB_TOKEN }}

@@ -48,5 +48,5 @@ jobs:
           assignee: ${{ github.actor }}
           reviewer: 2694109
           label: iroha2,longevity
-          target_branch: release
+          get_diff: true
           github_token: ${{ secrets.GITHUB_TOKEN }}

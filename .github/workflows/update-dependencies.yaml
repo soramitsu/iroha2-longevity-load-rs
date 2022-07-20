@@ -1,18 +1,23 @@
 name: load-rs::bump-dependencies
-#on: [push, pull_request]
 
 on:
-  schedule:
-    - cron: '*/15 * * * *'
+  push
 
+# Currently these dependencies are updated once per 1-2 months
+#   but there is not an any established day to update them
+# Run workflow At 10:00 UTC on Monday and Friday every week 
 # on:
-#   workflow_dispatch:
+#   schedule:
+#     - cron: '0 10 * * 1,5'
+
+# TODO: switch to workflow `dispatch` trigger
+#   in the future when iroha2-dev team will agree with it
 
 env:
   VERSION_URL: 'https://raw.githubusercontent.com/hyperledger/iroha/iroha2/data_model/Cargo.toml'
 
 jobs:
-  bump-iroha2-dev:
+  bump-load-rs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -41,7 +46,7 @@ jobs:
           title: "Update iroha2 dependencies to ${{ steps.new_version.outputs.stdout }}"
           body: "**Automated pull request**<br><br><p>Update `iroha client` and `iroha_data_model` dependencies from <a href=${{ env.VERSION_URL }}>Hyperledger repository</a></p>"
           assignee: ${{ github.actor }}
-          reviewer: BAStos525
+          reviewer: 2694109
           label: iroha2,longevity
-        #  target_branch: release
+          target_branch: release
           github_token: ${{ secrets.GITHUB_TOKEN }}

@@ -1,17 +1,15 @@
 name: load-rs::bump-dependencies
 
-on:
-  push
-
 # Currently these dependencies are updated once per 1-2 months
 #   but there is not an any established day to update them
-# Run workflow At 10:00 UTC on Monday and Friday every week 
-# on:
-#   schedule:
-#     - cron: '0 10 * * 1,5'
+# Workflow on `schedule` trigger could be run only on master/base branch
+# Run workflow At 10:00 UTC on Monday and Friday every week
+on:
+  schedule:
+    - cron: '0 10 * * 1,5'
 
-# TODO: switch to workflow `dispatch` trigger
-#   in the future when iroha2-dev team will agree with it
+# TODO: switch to workflow `dispatch` trigger and move workflows to dev and release branches
+#       in the future when iroha2-dev team will agree with it
 
 env:
   VERSION_URL: 'https://raw.githubusercontent.com/hyperledger/iroha/iroha2/data_model/Cargo.toml'
@@ -20,17 +18,24 @@ jobs:
   bump-load-rs:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - name: Grep iroha2 version from hyperledger repository
+      - uses: actions/checkout@v3
+      - name: Get iroha2 version from hyperledger repository
         uses: mathiasvr/command-output@v1
         id: new_version
         with:
           run: curl -s ${{ env.VERSION_URL }} | sed -ne '3p' | tr -d '\n'
-      - name: Find and Replace
+      - name: Find and replace 3th line
         uses: jacobtomlinson/gha-find-replace@v2
         with:
           find: version = "2.0.0-pre-rc.*
           replace: "${{ steps.new_version.outputs.stdout }}"
+          include: "Cargo.toml"
+          regex: true
+      - name: Find and replace 9-10th lines
+        uses: jacobtomlinson/gha-find-replace@v2
+        with:
+          find: ', version = "2.0.0-pre-rc.*'
+          replace: ", ${{ steps.new_version.outputs.stdout }} }"
           include: "Cargo.toml"
           regex: true
       - name: Push changes
@@ -40,13 +45,20 @@ jobs:
           add_timestamp: true
           commit_message: "bump iroha2 versions in Cargo.toml"
           target_branch: bump-iroha2-version
-      - name: Create pull request
-        uses: devops-infra/action-pull-request@v0.5.0
+      - name: Get PR branch name
+        uses: mathiasvr/command-output@v1
+        id: pr_branch
         with:
-          title: "Update iroha2 dependencies to ${{ steps.new_version.outputs.stdout }}"
-          body: "**Automated pull request**<br><br><p>Update `iroha client` and `iroha_data_model` dependencies from <a href=${{ env.VERSION_URL }}>Hyperledger repository</a></p>"
-          assignee: ${{ github.actor }}
-          reviewer: 2694109
-          label: iroha2,longevity
-          get_diff: true
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          run: git symbolic-ref --short HEAD | tr -d '\n'
+      - name: Create pull request
+        uses: vsoch/pull-request-action@1.0.19
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PULL_REQUEST_BRANCH: "master"
+          PULL_REQUEST_FROM_BRANCH: "${{ steps.pr_branch.outputs.stdout }}"
+          PULL_REQUEST_TITLE: "Update iroha2 dependencies to ${{ steps.new_version.outputs.stdout }}"
+          PULL_REQUEST_BODY: "**Automated pull request**<br><br><p>Update `iroha client` and `iroha_data_model` dependencies from <a href=${{ env.VERSION_URL }}>Hyperledger repository</a></p>"
+          PULL_REQUEST_ASSIGNEES: ${{ github.actor }}
+          PULL_REQUEST_REVIEWERS: BAStos525
+          PULL_REQUEST_TEAM_REVIEWERS: soramitsu/devops-team soramitsu/devops-support
+          PULL_REQUEST_UPDATE: true

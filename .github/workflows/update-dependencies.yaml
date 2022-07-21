@@ -27,14 +27,14 @@ jobs:
       - name: Find and replace 3th line
         uses: jacobtomlinson/gha-find-replace@v2
         with:
-          find: version = "2.0.0-pre-rc.*"
+          find: version = ".*-pre-rc.*"
           replace: "${{ steps.new_version.outputs.stdout }}"
           include: "Cargo.toml"
           regex: true
       - name: Find and replace 9-10th lines
         uses: jacobtomlinson/gha-find-replace@v2
         with:
-          find: version = "2.0.0-pre-rc.*" }
+          find: version = ".*-pre-rc.*" }
           replace: "${{ steps.new_version.outputs.stdout }} }"
           include: "Cargo.toml"
           regex: true

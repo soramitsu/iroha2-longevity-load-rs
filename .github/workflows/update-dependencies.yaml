@@ -23,21 +23,25 @@ jobs:
         uses: mathiasvr/command-output@v1
         id: new_version
         with:
-          run: curl -s ${{ env.VERSION_URL }} | sed -ne '3p' | tr -d '\n'
-      - name: Find and replace 3th line
-        uses: jacobtomlinson/gha-find-replace@v2
+          run: curl -s ${{ env.VERSION_URL }} | sed -n '3p' | sed -e 's/version = "//g' -e 's/"$//' | tr -d '\n'
+      - name: Edit package.version key
+        uses: ciiiii/toml-editor@1.0.0
         with:
-          find: version = "2.*.*"
-          replace: "${{ steps.new_version.outputs.stdout }}"
-          include: "Cargo.toml"
-          regex: true
-      - name: Find and replace 9-10th lines
-        uses: jacobtomlinson/gha-find-replace@v2
+          file: "Cargo.toml"
+          key: "package.version"
+          value: ${{ steps.new_version.outputs.stdout }}
+      - name: Edit iroha_client.version key
+        uses: ciiiii/toml-editor@1.0.0
         with:
-          find: version = "2.*.*" }
-          replace: "${{ steps.new_version.outputs.stdout }} }"
-          include: "Cargo.toml"
-          regex: true
+          file: "Cargo.toml"
+          key: "dependencies.iroha_client.version"
+          value: ${{ steps.new_version.outputs.stdout }} 
+      - name: Edit iroha_data_model key
+        uses: ciiiii/toml-editor@1.0.0
+        with:
+          file: "Cargo.toml"
+          key: "dependencies.iroha_data_model.version"
+          value: ${{ steps.new_version.outputs.stdout }}
       - name: Push changes
         uses: devops-infra/action-commit-push@v0.9.0
         with:

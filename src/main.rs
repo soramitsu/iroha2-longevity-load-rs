@@ -73,7 +73,7 @@ fn main() -> color_eyre::eyre::Result<()> {
     warn!("No status updates are given in the logs. To access that information please use `curl -X GET {} -i", args.address);
 
     info!("Reading configuration finished");
-    debug!("Configuration {:#?}", cfg);
+    debug!("Configuration: {:#?}", cfg);
     let client = Client::new(&cfg)?;
     let client_clone = client.clone();
     info!("Spawning clients");

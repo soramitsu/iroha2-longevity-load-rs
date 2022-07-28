@@ -123,6 +123,7 @@ fn main() -> color_eyre::eyre::Result<()> {
         let _e = ExitOnPanic;
         let mut current_accounts = 0;
         let interval = Duration::from_secs_f64(1_f64 / args.tps);
+        info!("Submitting alice clones");
         while current_accounts < args.accounts {
             status_clone_1
                 .write()
@@ -141,10 +142,11 @@ fn main() -> color_eyre::eyre::Result<()> {
                 thread::sleep(interval);
                 current_accounts += 1;
             } else {
-                println!("Submit failed");
+                warn!("Submit failed");
                 thread::sleep(Duration::from_secs(1));
             }
         }
+        info!("Submitting empty transactions");
         loop {
             status_clone_1
                 .write()

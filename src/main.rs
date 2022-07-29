@@ -1,7 +1,8 @@
 //! Script assumes that no other scripts or clients are generating transactions.
 
 use chrono::prelude::*;
-use iroha_client::{client::Client, Configuration};
+use iroha_client::client::Client;
+use iroha_config::client::Configuration;
 use iroha_data_model::{
     events::prelude::*,
     prelude::{Account, AccountId, Instruction, RegisterBox},

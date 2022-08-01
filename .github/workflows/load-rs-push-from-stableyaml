@@ -1,0 +1,29 @@
+name: load-rs-ci:stable
+
+on:
+  workflow_dispatch:
+
+jobs:
+  load-rs-dockerhub-stable:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          logout: true
+      - name: Build and push
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          push: true
+          tags: soramitsu/iroha2-longevity-load-rs:stable
+      - name: Synchronize with iroha2 repo
+        run: |
+          echo "response about the workflow end"
+          sleep 10s

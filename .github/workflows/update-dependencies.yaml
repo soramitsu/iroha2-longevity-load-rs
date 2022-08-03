@@ -7,7 +7,7 @@ name: load-rs::bump-dependencies
 #   merge changes to iroha2-dev branch and create a PR to master
 
 on:
-   workflow_dispatch: 
+   workflow_dispatch:
 
 env:
   VERSION_URL: 'https://raw.githubusercontent.com/hyperledger/iroha/iroha2-dev/data_model/Cargo.toml'
@@ -35,7 +35,7 @@ jobs:
         with:
           file: "Cargo.toml"
           key: "dependencies.iroha_client.version"
-          value: ${{ steps.new_version.outputs.stdout }} 
+          value: ${{ steps.new_version.outputs.stdout }}
       - name: Edit iroha_data_model key
         uses: ciiiii/toml-editor@1.0.0
         with:

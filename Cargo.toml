@@ -3,17 +3,30 @@ name = "iroha2-longevity-load-rs"
 version = "2.0.0-pre-rc.6"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
-iroha_client = { git = "https://github.com/hyperledger/iroha.git", branch = "iroha2-dev", version = "2.0.0-pre-rc.5" }
-iroha_data_model = { git = "https://github.com/hyperledger/iroha.git", branch = "iroha2-dev", version = "2.0.0-pre-rc.5" }
-iroha_config = { git = "https://github.com/hyperledger/iroha.git", branch = "iroha2-dev", version = "2.0.0-pre-rc.5" }
 rouille = "3.5.0"
 serde_json = "1.0.73"
 serde = "1.0.132"
-chrono = {version = "0.4", features = ["serde"]}
 structopt = "0.3.25"
 color-eyre = "0.6.1"
 tracing = "0.1.35"
 tracing-subscriber = "0.3.14"
+
+  [dependencies.iroha_client]
+  git = "https://github.com/hyperledger/iroha.git"
+  branch = "iroha2-dev"
+  version = "2.0.0-pre-rc.6"
+
+  [dependencies.iroha_data_model]
+  git = "https://github.com/hyperledger/iroha.git"
+  branch = "iroha2-dev"
+  version = "2.0.0-pre-rc.6"
+
+  [dependencies.iroha_config]
+  git = "https://github.com/hyperledger/iroha.git"
+  branch = "iroha2-dev"
+  version = "2.0.0-pre-rc.5"
+
+  [dependencies.chrono]
+  version = "0.4"
+  features = [ "serde" ]

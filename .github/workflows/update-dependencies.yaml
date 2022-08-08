@@ -53,6 +53,10 @@ jobs:
         with:
           github_token: "${{ secrets.GITHUB_TOKEN }}"
           commit_message: "bump iroha2 versions in Cargo.toml"
+      - name: Synchronize with hyperledger/iroha2:dev repo
+        run: |
+          echo "response about the workflow end"
+          sleep 10s
 
   bump-load-rs-master:
     needs: [merge-load-rs-iroha2-dev]

@@ -4,7 +4,7 @@ name: load-rs::bump-dependencies
 #   but there is not an any established day to update them
 # This is a dispatch event workflow that triggered 
 #   from I2::Dev::Deploy workflow in Hyperledger repo,
-#   merge changes to iroha2-dev branch and create a PR to master
+#   merge changes to iroha2-dev branch and create a PR to iroha2-stable
 
 on:
    workflow_dispatch:
@@ -58,7 +58,7 @@ jobs:
           echo "response about the workflow end"
           sleep 10s
 
-  bump-load-rs-master:
+  bump-load-rs-iroha2-stable:
     needs: [merge-load-rs-iroha2-dev]
     runs-on: ubuntu-latest
     steps:
@@ -67,7 +67,7 @@ jobs:
         uses: vsoch/pull-request-action@1.0.19
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PULL_REQUEST_BRANCH: "master"
+          PULL_REQUEST_BRANCH: "iroha2-stable"
           PULL_REQUEST_FROM_BRANCH: "iroha2-dev"
           PULL_REQUEST_TITLE: "Update iroha2 dependencies to ${{ needs.merge-load-rs-iroha2-dev.outputs.pr_title }}"
           PULL_REQUEST_BODY: "**Automated pull request**<br><br><p>Update iroha2 dependencies from <a href=${{ env.VERSION_URL }}>Hyperledger repository</a></p>"

@@ -11,7 +11,7 @@ on:
   types: [closed]
 
 jobs:
-  merge_iroha2-dev_to_master:
+  merge_iroha2-dev_to_iroha2-stable:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -21,7 +21,7 @@ jobs:
         uses: dorny/paths-filter@v2.10.2
         id: filter
         with:
-          base: master
+          base: iroha2-stable
           filters: |
             cargo:
               - 'Cargo.toml'
@@ -30,10 +30,10 @@ jobs:
         uses: vsoch/pull-request-action@1.0.19
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PULL_REQUEST_BRANCH: "master"
+          PULL_REQUEST_BRANCH: "iroha2-stable"
           PULL_REQUEST_FROM_BRANCH: "iroha2-dev"
-          PULL_REQUEST_TITLE: "Merge master into iroha2-dev"
-          PULL_REQUEST_BODY: "**Automated pull request**<br><br><p>Synchronize a changes from iroha2-dev to master branches</p>"
+          PULL_REQUEST_TITLE: "Merge iroha2-dev into iroha2-stable"
+          PULL_REQUEST_BODY: "**Automated pull request**<br><br><p>Synchronize a changes from iroha2-dev to iroha2-stable branches</p>"
           PULL_REQUEST_ASSIGNEES: ${{ github.actor }}
           PULL_REQUEST_REVIEWERS: BAStos525
           PULL_REQUEST_TEAM_REVIEWERS: soramitsu/devops-team soramitsu/devops-support

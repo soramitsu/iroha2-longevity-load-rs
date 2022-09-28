@@ -1,7 +1,7 @@
 use chrono::prelude::*;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Status {
     txs_committed: usize,
     txs_rejected: usize,

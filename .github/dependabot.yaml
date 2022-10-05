@@ -4,13 +4,13 @@ updates:
   # Maintain docker dependencies
   - package-ecosystem: "docker"
     schedule:
-      interval: "weekly"
-    target-branch: "iroha2-stable"
+      interval: "monthly"
+    target-branch: "iroha2-dev"
     directory: "/"
 
   # Maintain cargo dependencies
   - package-ecosystem: "cargo"
     schedule:
-      interval: "daily"
+      interval: "weekly"
     target-branch: "iroha2-dev"
     directory: "/"

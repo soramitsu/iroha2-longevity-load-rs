@@ -35,6 +35,6 @@ jobs:
           PULL_REQUEST_TITLE: "Merge iroha2-dev into iroha2-stable"
           PULL_REQUEST_BODY: "**Automated pull request**<br><br><p>Synchronize a changes from iroha2-dev to iroha2-stable branches</p>"
           PULL_REQUEST_ASSIGNEES: ${{ github.actor }}
-          PULL_REQUEST_REVIEWERS: BAStos525
+          PULL_REQUEST_REVIEWERS: BAStos525 appetrosyan
           PULL_REQUEST_TEAM_REVIEWERS: soramitsu/devops-team soramitsu/devops-support
           PULL_REQUEST_UPDATE: true

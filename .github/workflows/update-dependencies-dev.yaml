@@ -1,10 +1,10 @@
-name: load-rs::bump-dependencies
+name: load-rs::dev::bump-dependencies
 
 # Currently these dependencies are updated once per 1-2 months
 #   but there is not an any established day to update them
 # This is a dispatch event workflow that triggered 
 #   from I2::Dev::Deploy workflow in Hyperledger repo,
-#   merge changes to iroha2-dev branch and create a PR to iroha2-stable
+#   merge changes to iroha2-dev branch and trigger to run the analogical workflow to iroha2-stable
 
 on:
    workflow_dispatch:
@@ -47,7 +47,7 @@ jobs:
         with:
           file: "Cargo.toml"
           key: "dependencies.iroha_config.version"
-          value: ${{ steps.new_version.outputs.stdout }}          
+          value: ${{ steps.new_version.outputs.stdout }}
       - name: Push changes
         uses: devops-infra/action-commit-push@v0.9.0
         with:
@@ -57,21 +57,3 @@ jobs:
         run: |
           echo "response about the workflow end"
           sleep 10s
-
-  bump-load-rs-iroha2-stable:
-    needs: [merge-load-rs-iroha2-dev]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Create pull request
-        uses: vsoch/pull-request-action@1.0.19
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PULL_REQUEST_BRANCH: "iroha2-stable"
-          PULL_REQUEST_FROM_BRANCH: "iroha2-dev"
-          PULL_REQUEST_TITLE: "Update iroha2 dependencies to ${{ needs.merge-load-rs-iroha2-dev.outputs.pr_title }}"
-          PULL_REQUEST_BODY: "**Automated pull request**<br><br><p>Update iroha2 dependencies from <a href=${{ env.VERSION_URL }}>Hyperledger repository</a></p>"
-          PULL_REQUEST_ASSIGNEES: ${{ github.actor }}
-          PULL_REQUEST_REVIEWERS: BAStos525
-          PULL_REQUEST_TEAM_REVIEWERS: soramitsu/devops-team soramitsu/devops-support
-          PULL_REQUEST_UPDATE: true

@@ -11,15 +11,32 @@ structopt = "0.3.25"
 color-eyre = "0.6.1"
 tracing = "0.1.35"
 tracing-subscriber = "0.3.14"
+strum = "0.24"
+strum_macros = "0.24"
 
   [dependencies.iroha_client]
   git = "https://github.com/hyperledger/iroha.git"
-  branch = "iroha2"
+  branch = "iroha2-stable"
   version = "2.0.0-pre-rc.9"
 
   [dependencies.iroha_data_model]
   git = "https://github.com/hyperledger/iroha.git"
-  branch = "iroha2"
+  branch = "iroha2-stable"
+  version = "2.0.0-pre-rc.9"
+
+  [dependencies.iroha_config]
+  git = "https://github.com/hyperledger/iroha.git"
+  branch = "iroha2-stable"
+  version = "2.0.0-pre-rc.9"
+
+  [dependencies.iroha_crypto]
+  git = "https://github.com/hyperledger/iroha.git"
+  branch = "iroha2-stable"
+  version = "2.0.0-pre-rc.9"
+
+  [dependencies.iroha_primitives]
+  git = "https://github.com/hyperledger/iroha.git"
+  branch = "iroha2-stable"
   version = "2.0.0-pre-rc.9"
 
   [dependencies.chrono]

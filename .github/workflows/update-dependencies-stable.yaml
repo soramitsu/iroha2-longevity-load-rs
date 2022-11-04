@@ -6,7 +6,7 @@ name: load-rs::stable::bump-dependencies
 on:
    workflow_run:
     workflows:
-      - "load-rs::dev::bump-dependencies"
+      - "load-rs-ci:dev"
     types: [requested]
     branches: [iroha2-dev]
 
@@ -60,7 +60,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           body: "**Automated pull request**<br><br><p>Update iroha2 dependencies from <a href=${{ env.VERSION_URL }}>Hyperledger repository</a></p>"
           title: "Update iroha2 dependencies to ${{ steps.new_version.outputs.stdout }}"
-          reviewer: BAStos525, appetrosyan
+          reviewer: BAStos525 appetrosyan
           assignee: ${{ github.actor }}
           target_branch: "iroha2-stable"
           label: CI,iroha2-load-rs,ver_update

@@ -1,4 +1,4 @@
-name: load-rs::sync branches
+name: load-rs::sync dev-stable branches
 
 # The goal of this workflow is to create PR with changes of load-rs script itself
 #   from iroha2-dev branch because we need to keep the same rust source code for all script versions

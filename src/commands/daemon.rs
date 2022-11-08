@@ -16,12 +16,15 @@ use std::{
     io::Write,
     net::SocketAddr,
     str::FromStr,
-    sync::{Arc, RwLock},
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc, RwLock,
+    },
     thread,
     time::{Duration, Instant},
 };
 use structopt::StructOpt;
-use tokio::{join, task};
+use tokio::{join, signal, task};
 use tracing::{debug, info, warn, Level};
 use tracing_subscriber::FmtSubscriber;
 
@@ -63,6 +66,8 @@ async fn run_daemon(
     warn!("No status updates are given in the logs. To access that information please use `curl -X GET {} -i", address);
     info!("Reading configuration finished");
     debug!("Configuration: {:#?}", cfg);
+    let is_closed = Arc::new(AtomicBool::new(false));
+    let is_closed_clone = Arc::clone(&is_closed);
     let operations = operations.into_iter().fold(HashMap::new(), |mut m, op| {
         m.insert(op, count);
         m
@@ -72,15 +77,23 @@ async fn run_daemon(
     let shared_status = Arc::new(RwLock::new(Status::default()));
     let status = Arc::clone(&shared_status);
     info!("Spawning clients");
-    let update_status_fut =
-        task::spawn_blocking(move || update_status_according_to_events(client, status));
+    let update_status_fut = task::spawn_blocking(move || {
+        update_status_according_to_events(client, status, is_closed_clone);
+    });
     info!("First client thread spawned");
+    let is_closed_clone = Arc::clone(&is_closed);
     let client = shared_client;
     let status = Arc::clone(&shared_status);
     let perform_operations_fut = task::spawn_blocking(move || {
         let interval = Duration::from_secs_f64(1_f64 / f64::from(tps));
-        perform_operations(client.clone(), Arc::clone(&status), interval, operations);
-        submit_empty_transactions(client, status, interval);
+        perform_operations(
+            client.clone(),
+            Arc::clone(&status),
+            interval,
+            operations,
+            Arc::clone(&is_closed_clone),
+        );
+        submit_empty_transactions(client, status, interval, is_closed_clone);
     });
     info!("Second thread is spawned. Starting server");
     let service = make_service_fn(move |_conn| {
@@ -92,7 +105,9 @@ async fn run_daemon(
             }))
         }
     });
-    let server = Server::bind(&address).serve(service);
+    let server_fut = Server::bind(&address)
+        .serve(service)
+        .with_graceful_shutdown(handle_shutdown_signal(is_closed));
     join!(
         async {
             update_status_fut
@@ -102,22 +117,29 @@ async fn run_daemon(
         async {
             perform_operations_fut
                 .await
-                .expect("Failed to perform operations");
+                .expect("Failed to perform all operations");
         },
         async {
-            server.await.expect("Failed to serve a service");
+            server_fut.await.expect("Failed to handle the server");
         }
     );
     Ok(())
 }
 
-fn update_status_according_to_events(client: Client, status: Arc<RwLock<Status>>) {
+fn update_status_according_to_events(
+    client: Client,
+    status: Arc<RwLock<Status>>,
+    is_closed: Arc<AtomicBool>,
+) {
     let event_filter = FilterBox::Pipeline(PipelineEventFilter::new());
     for event in client
         .listen_for_events(event_filter)
         .expect("Failed to listen for events")
     {
-        debug!(event = ?event, "got an event");
+        if is_closed.load(Ordering::SeqCst) {
+            return;
+        }
+        debug!(event = ?event, "Got an event");
         if let Ok(Event::Pipeline(event)) = event {
             match event.status {
                 PipelineStatus::Validating => {}
@@ -149,14 +171,18 @@ fn perform_operations(
     status: Arc<RwLock<Status>>,
     interval: Duration,
     mut operations: HashMap<Operation, usize>,
+    is_closed: Arc<AtomicBool>,
 ) {
     let alice_id = AccountId::from_str("alice@wonderland").expect("Failed to make Alice id");
     let wonderland_id =
         DomainId::new(Name::from_str("wonderland").expect("Failed to create Wodnerland name"));
     while !operations.is_empty() {
+        if is_closed.load(Ordering::SeqCst) {
+            return;
+        }
         operations.retain(|op, count| {
             let start_time = Instant::now();
-            debug!(operation = ?op, count = ?count, "perform operation");
+            debug!(operation = ?op, count = ?count, "Performing an operation");
             let instructions =
                 make_instruction_by_operation(op, alice_id.clone(), wonderland_id.clone(), *count);
             let res = client.submit_all(instructions);
@@ -179,9 +205,17 @@ fn perform_operations(
     }
 }
 
-fn submit_empty_transactions(client: Client, status: Arc<RwLock<Status>>, interval: Duration) {
+fn submit_empty_transactions(
+    client: Client,
+    status: Arc<RwLock<Status>>,
+    interval: Duration,
+    is_closed: Arc<AtomicBool>,
+) {
     info!("Submitting empty transactions");
     loop {
+        if is_closed.load(Ordering::SeqCst) {
+            return;
+        }
         let start_time = Instant::now();
         client
             .submit_all(vec![])
@@ -208,4 +242,12 @@ async fn handle_status_request(
         .body(Body::from(str_status))
         .unwrap();
     Ok(res)
+}
+
+async fn handle_shutdown_signal(is_closed: Arc<AtomicBool>) {
+    signal::ctrl_c()
+        .await
+        .expect("Failed to install CTRL+C signal handler");
+    info!("Received the signal, therefore shutting down");
+    is_closed.store(true, Ordering::SeqCst);
 }

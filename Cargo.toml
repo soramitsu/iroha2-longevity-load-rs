@@ -15,39 +15,39 @@ strum_macros = "0.24"
 async-trait = "0.1.57"
 futures-util = "0.3"
 
-[dependencies.tokio]
-version = "1"
-features = ["macros", "rt-multi-thread"]
+  [dependencies.tokio]
+  version = "1"
+  features = [ "macros", "rt-multi-thread" ]
 
-[dependencies.hyper]
-version = "0.14"
-features = ["client", "server"]
+  [dependencies.hyper]
+  version = "0.14"
+  features = [ "client", "server" ]
 
-[dependencies.chrono]
-version = "0.4"
-features = ["serde"]
+  [dependencies.chrono]
+  version = "0.4"
+  features = [ "serde" ]
 
-[dependencies.iroha_client]
-git = "https://github.com/hyperledger/iroha.git"
-branch = "iroha2-dev"
-version = "2.0.0-pre-rc.9"
+  [dependencies.iroha_client]
+  git = "https://github.com/hyperledger/iroha.git"
+  branch = "iroha2-dev"
+  version = "2.0.0-pre-rc.9"
 
-[dependencies.iroha_data_model]
-git = "https://github.com/hyperledger/iroha.git"
-branch = "iroha2-dev"
-version = "2.0.0-pre-rc.9"
+  [dependencies.iroha_data_model]
+  git = "https://github.com/hyperledger/iroha.git"
+  branch = "iroha2-dev"
+  version = "2.0.0-pre-rc.9"
 
-[dependencies.iroha_config]
-git = "https://github.com/hyperledger/iroha.git"
-branch = "iroha2-dev"
-version = "2.0.0-pre-rc.9"
+  [dependencies.iroha_config]
+  git = "https://github.com/hyperledger/iroha.git"
+  branch = "iroha2-dev"
+  version = "2.0.0-pre-rc.9"
 
-[dependencies.iroha_crypto]
-git = "https://github.com/hyperledger/iroha.git"
-branch = "iroha2-dev"
-version = "2.0.0-pre-rc.9"
+  [dependencies.iroha_crypto]
+  git = "https://github.com/hyperledger/iroha.git"
+  branch = "iroha2-dev"
+  version = "2.0.0-pre-rc.9"
 
-[dependencies.iroha_primitives]
-git = "https://github.com/hyperledger/iroha.git"
-branch = "iroha2-dev"
-version = "2.0.0-pre-rc.9"
+  [dependencies.iroha_primitives]
+  git = "https://github.com/hyperledger/iroha.git"
+  branch = "iroha2-dev"
+  version = "2.0.0-pre-rc.9"

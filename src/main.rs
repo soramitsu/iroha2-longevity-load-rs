@@ -2,6 +2,7 @@
 mod args;
 mod async_client;
 mod commands;
+mod number;
 mod operation;
 mod status;
 

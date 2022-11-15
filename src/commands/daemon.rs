@@ -1,5 +1,5 @@
 use super::make_instruction_by_operation;
-use crate::{args::RunArgs, operation::Operation, status::Status};
+use crate::{args::RunArgs, number::PositiveFloat, operation::Operation, status::Status};
 use async_trait::async_trait;
 use color_eyre::eyre::Result;
 use hyper::{
@@ -30,7 +30,7 @@ pub struct Args {
     #[structopt(long, default_value = "127.0.0.1:8084")]
     address: SocketAddr,
     #[structopt(long, default_value = "2")]
-    tps: usize,
+    tps: PositiveFloat,
     #[structopt(long, default_value = "100")]
     count: usize,
     #[structopt(long, required = true)]
@@ -46,7 +46,7 @@ impl RunArgs for Args {
 
 async fn run_daemon(
     address: SocketAddr,
-    tps: usize,
+    tps: PositiveFloat,
     count: usize,
     operations: Vec<Operation>,
 ) -> Result<()> {
@@ -78,11 +78,7 @@ async fn run_daemon(
     let client = shared_client;
     let status = Arc::clone(&shared_status);
     let perform_operations_fut = task::spawn_blocking(move || {
-        let interval = if tps == 0 {
-            Duration::from_secs_f64(0.)
-        } else {
-            Duration::from_secs_f64(1_f64 / tps as f64)
-        };
+        let interval = Duration::from_secs_f64(1_f64 / f64::from(tps));
         perform_operations(client.clone(), Arc::clone(&status), interval, operations);
         submit_empty_transactions(client, status, interval);
     });

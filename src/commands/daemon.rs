@@ -29,7 +29,7 @@ use tracing_subscriber::FmtSubscriber;
 pub struct Args {
     #[structopt(long, default_value = "127.0.0.1:8084")]
     address: SocketAddr,
-    #[structopt(long, default_value = "2")]
+    #[structopt(long, default_value = "2.0")]
     tps: PositiveFloat,
     #[structopt(long, default_value = "100")]
     count: usize,

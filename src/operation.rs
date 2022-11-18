@@ -9,4 +9,6 @@ pub enum Operation {
     RegisterAssetBigQuantity,
     RegisterAssetFixed,
     RegisterAssetStore,
+    TransferAsset,
+    MintAsset,
 }

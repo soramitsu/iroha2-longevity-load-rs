@@ -1,10 +1,11 @@
 pub mod daemon;
 pub mod oneshot;
 
-use crate::operation::Operation;
+use crate::{operation::Operation, value::ValueWrapper};
 use iroha_crypto::prelude::*;
 use iroha_data_model::prelude::*;
 use iroha_primitives::fixed::Fixed;
+use rand::prelude::*;
 use std::str::FromStr;
 
 fn make_instruction_by_operation(
@@ -34,10 +35,14 @@ fn make_instruction_by_operation(
                 .expect("Failed to create a new asset name");
             let new_asset_definition_id: AssetDefinitionId =
                 AssetDefinitionId::new(new_asset_name, test_domain_id);
-            let new_asset_definition = AssetDefinition::quantity(new_asset_definition_id.clone());
+            let mut new_asset_definition =
+                AssetDefinition::quantity(new_asset_definition_id.clone());
+            if random() {
+                new_asset_definition = new_asset_definition.mintable_once();
+            }
             let new_asset = Asset::new(
                 AssetId::new(new_asset_definition_id, test_account_id),
-                AssetValue::Quantity(1000),
+                AssetValue::Quantity(random()),
             );
             vec![
                 RegisterBox::new(new_asset_definition).into(),
@@ -49,11 +54,14 @@ fn make_instruction_by_operation(
                 .expect("Failed to create a new asset name");
             let new_asset_definition_id: AssetDefinitionId =
                 AssetDefinitionId::new(new_asset_name, test_domain_id);
-            let new_asset_definition =
+            let mut new_asset_definition =
                 AssetDefinition::big_quantity(new_asset_definition_id.clone());
+            if random() {
+                new_asset_definition = new_asset_definition.mintable_once();
+            }
             let new_asset = Asset::new(
                 AssetId::new(new_asset_definition_id, test_account_id),
-                AssetValue::BigQuantity(100000000999900u128),
+                AssetValue::BigQuantity(random()),
             );
             vec![
                 RegisterBox::new(new_asset_definition).into(),
@@ -65,10 +73,13 @@ fn make_instruction_by_operation(
                 .expect("Failed to create a new asset name");
             let new_asset_definition_id: AssetDefinitionId =
                 AssetDefinitionId::new(new_asset_name, test_domain_id);
-            let new_asset_definition = AssetDefinition::fixed(new_asset_definition_id.clone());
+            let mut new_asset_definition = AssetDefinition::fixed(new_asset_definition_id.clone());
+            if random() {
+                new_asset_definition = new_asset_definition.mintable_once();
+            }
             let new_asset = Asset::new(
                 AssetId::new(new_asset_definition_id, test_account_id),
-                AssetValue::Fixed(Fixed::try_from(1000f64).expect("Valid fixed num")),
+                AssetValue::Fixed(Fixed::try_from(random::<f64>()).expect("Valid fixed num")),
             );
             vec![
                 RegisterBox::new(new_asset_definition).into(),
@@ -80,12 +91,16 @@ fn make_instruction_by_operation(
                 .expect("Failed to create a new asset name");
             let new_asset_definition_id: AssetDefinitionId =
                 AssetDefinitionId::new(new_asset_name, test_domain_id);
-            let new_asset_definition = AssetDefinition::store(new_asset_definition_id.clone());
+            let mut new_asset_definition = AssetDefinition::store(new_asset_definition_id.clone());
+            if random() {
+                new_asset_definition = new_asset_definition.mintable_once();
+            }
             let mut store = Metadata::new();
+            let val: ValueWrapper = random();
             store
                 .insert_with_limits(
                     Name::from_str("Bytes").expect("Failed to create a metadata key"),
-                    Value::Vec(vec![Value::U32(99), Value::U32(98), Value::U32(300)]),
+                    val.inner(),
                     MetadataLimits::new(10, 100),
                 )
                 .expect("Insert some metadata");

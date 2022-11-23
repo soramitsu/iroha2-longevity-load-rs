@@ -5,6 +5,7 @@ mod commands;
 mod number;
 mod operation;
 mod status;
+mod value;
 
 use args::RunArgs;
 use async_trait::async_trait;

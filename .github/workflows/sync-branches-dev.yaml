@@ -10,35 +10,26 @@ on:
   branches: [iroha2-dev]
   types: [closed]
 
-permissions:
-  contents: read
-  pull-requests: write
-
 jobs:
   merge_iroha2-dev_to_iroha2-stable:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-        with:
-          fetch-depth: 1
       - name: Filter files to be merged
-        uses: dorny/paths-filter@v2.10.2
+        uses: dorny/paths-filter@v2.11.1
         id: filter
         with:
-          base: iroha2-stable
           filters: |
             cargo:
               - 'Cargo.toml'
       - name: Create pull request
         if: steps.filter.outputs.cargo == 'false'
-        uses: vsoch/pull-request-action@1.0.19
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PULL_REQUEST_BRANCH: "iroha2-stable"
-          PULL_REQUEST_FROM_BRANCH: "iroha2-dev"
-          PULL_REQUEST_TITLE: "Merge iroha2-dev into iroha2-stable"
-          PULL_REQUEST_BODY: "**Automated pull request**<br><br><p>Synchronize a changes from iroha2-dev to iroha2-stable branches</p>"
-          PULL_REQUEST_ASSIGNEES: ${{ github.actor }}
-          PULL_REQUEST_REVIEWERS: BAStos525 appetrosyan
-          PULL_REQUEST_TEAM_REVIEWERS: soramitsu/devops-team soramitsu/devops-support
-          PULL_REQUEST_UPDATE: true
+        uses: repo-sync/pull-request@v2.9
+        with:
+          source_branch: "iroha2-dev"
+          destination_branch: "iroha2-stable"
+          pr_title: "Merge iroha2-dev into iroha2-stable"
+          pr_body: "**Automated pull request**<br><br><p>Synchronize a changes from iroha2-dev to iroha2-stable branches</p>"
+          pr_reviewer: "BAStos525,appetrosyan"
+          pr_assignee: ${{ github.actor }}
+          pr_label: "iroha2,load-rs,auto-pr"

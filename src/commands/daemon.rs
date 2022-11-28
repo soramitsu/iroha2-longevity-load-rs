@@ -150,30 +150,40 @@ fn perform_operations(
     interval: Duration,
     mut operations: HashMap<Operation, usize>,
 ) {
-    let alice_id = AccountId::from_str("alice@wonderland").expect("Failed to make Alice id");
+    let alice_id =
+        AccountId::from_str("alice@wonderland").expect("Failed to create test account id");
     let wonderland_id =
-        DomainId::new(Name::from_str("wonderland").expect("Failed to create Wodnerland name"));
+        DomainId::new(Name::from_str("wonderland").expect("Failed to create test domain name"));
     while !operations.is_empty() {
         operations.retain(|op, count| {
             let start_time = Instant::now();
             debug!(operation = ?op, count = ?count, "perform operation");
-            let instructions =
+            let instructions_iter =
                 make_instruction_by_operation(op, alice_id.clone(), wonderland_id.clone(), *count);
-            let res = client.submit_all(instructions);
+            let res: Result<usize> =
+                instructions_iter
+                    .into_iter()
+                    .try_fold(0usize, |acc, instructions| {
+                        client.submit_all(instructions)?;
+                        Ok(acc + 1)
+                    });
             let elapsed = Instant::now().duration_since(start_time);
             if elapsed < interval {
                 thread::sleep(interval - elapsed);
             }
-            if let Err(err) = res {
-                warn!("Submit failed: {}", err);
-                true
-            } else {
-                status
-                    .write()
-                    .expect("Failed to lock to write status")
-                    .tx_is_sent();
-                *count -= 1;
-                *count != 0
+            match res {
+                Err(err) => {
+                    warn!("Submit failed: {}", err);
+                    true
+                }
+                Ok(txs_count) => {
+                    status
+                        .write()
+                        .expect("Failed to lock to write status")
+                        .tx_is_sent(txs_count);
+                    *count -= 1;
+                    *count != 0
+                }
             }
         });
     }
@@ -189,7 +199,7 @@ fn submit_empty_transactions(client: Client, status: Arc<RwLock<Status>>, interv
         status
             .write()
             .expect("Failed to lock to write status")
-            .tx_is_sent();
+            .tx_is_sent(1);
         let elapsed = Instant::now().duration_since(start_time);
         if elapsed < interval {
             thread::sleep(interval - elapsed);

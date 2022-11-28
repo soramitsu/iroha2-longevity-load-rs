@@ -13,8 +13,8 @@ pub struct Status {
 }
 
 impl Status {
-    pub fn tx_is_sent(&mut self) -> Option<DateTime<Utc>> {
-        self.txs_sent += 1;
+    pub fn tx_is_sent(&mut self, txs_count: usize) -> Option<DateTime<Utc>> {
+        self.txs_sent += txs_count;
         self.latest_sent_at.replace(Utc::now())
     }
 

@@ -9,6 +9,8 @@ pub enum Operation {
     RegisterAssetBigQuantity,
     RegisterAssetFixed,
     RegisterAssetStore,
+    UnregisterAccount,
+    UnregisterDomain,
     TransferAsset,
     MintAsset,
 }

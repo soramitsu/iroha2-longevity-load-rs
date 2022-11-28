@@ -13,22 +13,26 @@ fn make_instruction_by_operation(
     test_account_id: AccountId,
     test_domain_id: DomainId,
     index: usize,
-) -> Vec<Instruction> {
+) -> Vec<Vec<Instruction>> {
     match op {
         Operation::RegisterAccount => {
             let new_account_name = Name::from_str(format!("alice{}", index).as_str())
                 .expect("Failed to create a new account name");
-            let new_account_id: AccountId = AccountId::new(new_account_name, test_domain_id);
+            let new_account_id = AccountId::new(new_account_name, test_domain_id);
             let (public_key, _) = KeyPair::generate()
                 .expect("Failed to create a new key pair")
                 .into();
-            vec![RegisterBox::new(Account::new(new_account_id, [public_key])).into()]
+            vec![vec![RegisterBox::new(Account::new(
+                new_account_id,
+                [public_key],
+            ))
+            .into()]]
         }
         Operation::RegisterDomain => {
             let new_domain_name = Name::from_str(format!("wonderland{}", index).as_str())
                 .expect("Failed to create a new domain name");
-            let new_domain_id: DomainId = DomainId::new(new_domain_name);
-            vec![RegisterBox::new(Domain::new(new_domain_id)).into()]
+            let new_domain_id = DomainId::new(new_domain_name);
+            vec![vec![RegisterBox::new(Domain::new(new_domain_id)).into()]]
         }
         Operation::RegisterAssetQuantity => {
             let new_asset_name = Name::from_str(format!("rose_quantity{}", index).as_str())
@@ -44,10 +48,10 @@ fn make_instruction_by_operation(
                 AssetId::new(new_asset_definition_id, test_account_id),
                 AssetValue::Quantity(random()),
             );
-            vec![
+            vec![vec![
                 RegisterBox::new(new_asset_definition).into(),
                 RegisterBox::new(new_asset).into(),
-            ]
+            ]]
         }
         Operation::RegisterAssetBigQuantity => {
             let new_asset_name = Name::from_str(format!("rose_big_quantity{}", index).as_str())
@@ -63,10 +67,10 @@ fn make_instruction_by_operation(
                 AssetId::new(new_asset_definition_id, test_account_id),
                 AssetValue::BigQuantity(random()),
             );
-            vec![
+            vec![vec![
                 RegisterBox::new(new_asset_definition).into(),
                 RegisterBox::new(new_asset).into(),
-            ]
+            ]]
         }
         Operation::RegisterAssetFixed => {
             let new_asset_name = Name::from_str(format!("rose_fixed{}", index).as_str())
@@ -81,10 +85,10 @@ fn make_instruction_by_operation(
                 AssetId::new(new_asset_definition_id, test_account_id),
                 AssetValue::Fixed(Fixed::try_from(random::<f64>()).expect("Valid fixed num")),
             );
-            vec![
+            vec![vec![
                 RegisterBox::new(new_asset_definition).into(),
                 RegisterBox::new(new_asset).into(),
-            ]
+            ]]
         }
         Operation::RegisterAssetStore => {
             let new_asset_name = Name::from_str(format!("rose_store{}", index).as_str())
@@ -108,10 +112,45 @@ fn make_instruction_by_operation(
                 AssetId::new(new_asset_definition_id, test_account_id),
                 AssetValue::Store(store),
             );
-            vec![
+            vec![vec![
                 RegisterBox::new(new_asset_definition).into(),
                 RegisterBox::new(new_asset).into(),
-            ]
+            ]]
+        }
+        Operation::UnregisterAccount => {
+            // Register an account
+            let new_account_name = Name::from_str(format!("bob_unregister_{}", index).as_str())
+                .expect("Failed to create a new account name");
+            let new_account_id = AccountId::new(new_account_name, test_domain_id);
+            let (public_key, _) = KeyPair::generate()
+                .expect("Failed to create a new key pair")
+                .into();
+            let register_account_box =
+                RegisterBox::new(Account::new(new_account_id.clone(), [public_key]));
+
+            // Unregister an account
+            let unregister_account_box = UnregisterBox::new(IdBox::AccountId(new_account_id));
+
+            vec![vec![
+                register_account_box.into(),
+                unregister_account_box.into(),
+            ]]
+        }
+        Operation::UnregisterDomain => {
+            // Register a domain
+            let new_domain_name =
+                Name::from_str(format!("wonderland_unregister_{}", index).as_str())
+                    .expect("Failed to create a new domain name");
+            let new_domain_id = DomainId::new(new_domain_name);
+            let register_domain_box = RegisterBox::new(Domain::new(new_domain_id.clone()));
+
+            // Unregister a domain
+            let unregister_domain_box = UnregisterBox::new(IdBox::DomainId(new_domain_id));
+
+            vec![vec![
+                register_domain_box.into(),
+                unregister_domain_box.into(),
+            ]]
         }
         Operation::TransferAsset => {
             // Make a new sender asset
@@ -143,7 +182,7 @@ fn make_instruction_by_operation(
             let new_recipient_asset =
                 Asset::new(new_recipient_asset_id.clone(), AssetValue::Quantity(0));
 
-            vec![
+            vec![vec![
                 RegisterBox::new(new_asset_definition).into(),
                 RegisterBox::new(new_sender_asset).into(),
                 RegisterBox::new(new_recipient_account).into(),
@@ -154,7 +193,7 @@ fn make_instruction_by_operation(
                     IdBox::AssetId(new_recipient_asset_id),
                 )
                 .into(),
-            ]
+            ]]
         }
         Operation::MintAsset => {
             // Make a new asset
@@ -175,12 +214,12 @@ fn make_instruction_by_operation(
                 .into();
             let new_account = Account::new(new_account_id, [public_key]);
 
-            vec![
+            vec![vec![
                 RegisterBox::new(new_asset_definition).into(),
                 RegisterBox::new(new_asset).into(),
                 RegisterBox::new(new_account).into(),
                 MintBox::new(1_u32, IdBox::AssetId(new_asset_id)).into(),
-            ]
+            ]]
         }
     }
 }

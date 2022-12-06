@@ -27,13 +27,13 @@ use tracing_subscriber::FmtSubscriber;
 
 #[derive(Debug, StructOpt)]
 pub struct Args {
-    #[structopt(long, default_value = "127.0.0.1:8084")]
+    #[structopt(short = "a", long, default_value = "127.0.0.1:8084")]
     address: SocketAddr,
-    #[structopt(long, default_value = "2.0")]
+    #[structopt(short = "t", long, default_value = "2.0")]
     tps: PositiveFloat,
-    #[structopt(long, default_value = "100")]
+    #[structopt(short = "c", long, default_value = "100")]
     count: usize,
-    #[structopt(long, required = true)]
+    #[structopt(short = "o", long, required = true)]
     operation: Vec<Operation>,
 }
 

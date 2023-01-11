@@ -1,10 +1,8 @@
 name: load-rs-ci:dev
 
-# Currently these dependencies are updated once per 1-2 months
-#   but there is not an any established day to update them
 # This is a dispatch event workflow that triggered 
 #   from I2::Dev::Deploy workflow in Hyperledger repo,
-#   merge changes to iroha2-dev branch, trigger to run the analogical workflow to iroha2-stable
+#   merge changes to iroha2-dev branch
 #   and build load-rs script-dev image
 
 on:

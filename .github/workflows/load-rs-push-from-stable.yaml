@@ -1,10 +1,76 @@
 name: load-rs-ci:stable
 
+# Currently these dependencies are updated once per 1-2 months
+#   but there is not an any established day to update them
+# This is a dispatch event workflow that triggered 
+#   from I2::Release::Publish workflow in Hyperledger repo,
+#   merge changes to iroha2-stable branch
+#   and build load-rs script-stable image
+
 on:
   workflow_dispatch:
 
+env:
+  VERSION_URL: 'https://raw.githubusercontent.com/hyperledger/iroha/iroha2-stable/data_model/Cargo.toml'
+
 jobs:
+  merge-load-rs-iroha2-stable:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Get iroha2 version from hyperledger repository
+        uses: mathiasvr/command-output@v1
+        id: new_version
+        with:
+          run: curl -s ${{ env.VERSION_URL }} | sed -n '3p' | sed -e 's/version = "//g' -e 's/"$//' | tr -d '\n'
+      - name: Edit package.version key
+        uses: ciiiii/toml-editor@1.0.0
+        with:
+          file: "Cargo.toml"
+          key: "package.version"
+          value: ${{ steps.new_version.outputs.stdout }}
+      - name: Edit iroha_client.version key
+        uses: ciiiii/toml-editor@1.0.0
+        with:
+          file: "Cargo.toml"
+          key: "dependencies.iroha_client.version"
+          value: ${{ steps.new_version.outputs.stdout }}
+      - name: Edit iroha_data_model key
+        uses: ciiiii/toml-editor@1.0.0
+        with:
+          file: "Cargo.toml"
+          key: "dependencies.iroha_data_model.version"
+          value: ${{ steps.new_version.outputs.stdout }}
+      - name: Edit iroha_config key
+        uses: ciiiii/toml-editor@1.0.0
+        with:
+          file: "Cargo.toml"
+          key: "dependencies.iroha_config.version"
+          value: ${{ steps.new_version.outputs.stdout }}
+      - name: Edit iroha_crypto key
+        uses: ciiiii/toml-editor@1.0.0
+        with:
+          file: "Cargo.toml"
+          key: "dependencies.iroha_crypto.version"
+          value: ${{ steps.new_version.outputs.stdout }}
+      - name: Edit iroha_primitives key
+        uses: ciiiii/toml-editor@1.0.0
+        with:
+          file: "Cargo.toml"
+          key: "dependencies.iroha_primitives.version"
+          value: ${{ steps.new_version.outputs.stdout }}
+      - name: Push changes
+        uses: devops-infra/action-commit-push@v0.9.0
+        with:
+          github_token: "${{ secrets.GITHUB_TOKEN }}"
+          commit_message: "bump iroha2 versions in Cargo.toml"
+      - name: Synchronize with hyperledger/iroha2:dev repo
+        run: |
+          echo "response about the workflow end"
+          sleep 10s          
+
   load-rs-dockerhub-stable:
+    needs: merge-load-rs-iroha2-stable
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

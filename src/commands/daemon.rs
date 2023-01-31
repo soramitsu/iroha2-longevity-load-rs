@@ -2,6 +2,7 @@ use super::make_instruction_by_operation;
 use crate::{args::RunArgs, number::PositiveFloat, operation::Operation, status::Status};
 use async_trait::async_trait;
 use color_eyre::eyre::Result;
+use futures_util::StreamExt;
 use hyper::{
     header,
     service::{make_service_fn, service_fn},
@@ -16,12 +17,15 @@ use std::{
     io::Write,
     net::SocketAddr,
     str::FromStr,
-    sync::{Arc, RwLock},
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc, RwLock,
+    },
     thread,
     time::{Duration, Instant},
 };
 use structopt::StructOpt;
-use tokio::{join, task};
+use tokio::{join, select, signal, sync::Notify, task};
 use tracing::{debug, info, warn, Level};
 use tracing_subscriber::FmtSubscriber;
 
@@ -69,18 +73,35 @@ async fn run_daemon(
     });
     let shared_client = Client::new(&cfg)?;
     let client = shared_client.clone();
+    let notify_close = Arc::new(Notify::new());
     let shared_status = Arc::new(RwLock::new(Status::default()));
     let status = Arc::clone(&shared_status);
     info!("Spawning clients");
-    let update_status_fut =
-        task::spawn_blocking(move || update_status_according_to_events(client, status));
+    let update_status_fut = task::spawn(update_status_according_to_events(
+        client,
+        status,
+        Arc::clone(&notify_close),
+    ));
     info!("First client thread spawned");
     let client = shared_client;
     let status = Arc::clone(&shared_status);
+    let notify_close_clone = Arc::clone(&notify_close);
     let perform_operations_fut = task::spawn_blocking(move || {
         let interval = Duration::from_secs_f64(1_f64 / f64::from(tps));
-        perform_operations(client.clone(), Arc::clone(&status), interval, operations);
-        submit_empty_transactions(client, status, interval);
+        let is_closed = Arc::new(AtomicBool::new(false));
+        let is_closed_clone = Arc::clone(&is_closed);
+        task::spawn(async move {
+            notify_close_clone.notified().await;
+            is_closed_clone.store(true, Ordering::SeqCst);
+        });
+        perform_operations(
+            client.clone(),
+            Arc::clone(&status),
+            interval,
+            operations,
+            Arc::clone(&is_closed),
+        );
+        submit_empty_transactions(client, status, interval, is_closed);
     });
     info!("Second thread is spawned. Starting server");
     let service = make_service_fn(move |_conn| {
@@ -92,7 +113,9 @@ async fn run_daemon(
             }))
         }
     });
-    let server = Server::bind(&address).serve(service);
+    let server = Server::bind(&address)
+        .serve(service)
+        .with_graceful_shutdown(handle_shutdown_signal(notify_close));
     join!(
         async {
             update_status_fut
@@ -111,12 +134,25 @@ async fn run_daemon(
     Ok(())
 }
 
-fn update_status_according_to_events(client: Client, status: Arc<RwLock<Status>>) {
+async fn update_status_according_to_events(
+    client: Client,
+    status: Arc<RwLock<Status>>,
+    notify_close: Arc<Notify>,
+) {
     let event_filter = FilterBox::Pipeline(PipelineEventFilter::new());
-    for event in client
-        .listen_for_events(event_filter)
-        .expect("Failed to listen for events")
-    {
+    let mut event_stream = client.listen_for_events_async(event_filter).await.unwrap();
+    loop {
+        let event = select! {
+            next = event_stream.next() => {
+                match next {
+                    Some(event) => event,
+                    None => break
+                }
+            },
+            _ = notify_close.notified() => {
+                break;
+            }
+        };
         debug!(event = ?event, "got an event");
         if let Ok(Event::Pipeline(event)) = event {
             match event.status {
@@ -142,6 +178,7 @@ fn update_status_according_to_events(client: Client, status: Arc<RwLock<Status>>
                 .tx_is_unknown()
         }
     }
+    event_stream.close().await;
 }
 
 fn perform_operations(
@@ -149,11 +186,15 @@ fn perform_operations(
     status: Arc<RwLock<Status>>,
     interval: Duration,
     mut operations: HashMap<Operation, usize>,
+    is_closed: Arc<AtomicBool>,
 ) {
     let alice_id = AccountId::from_str("alice@wonderland").expect("Failed to make Alice id");
     let wonderland_id =
         DomainId::new(Name::from_str("wonderland").expect("Failed to create Wodnerland name"));
     while !operations.is_empty() {
+        if is_closed.load(Ordering::SeqCst) {
+            return;
+        }
         operations.retain(|op, count| {
             let start_time = Instant::now();
             debug!(operation = ?op, count = ?count, "perform operation");
@@ -179,9 +220,17 @@ fn perform_operations(
     }
 }
 
-fn submit_empty_transactions(client: Client, status: Arc<RwLock<Status>>, interval: Duration) {
+fn submit_empty_transactions(
+    client: Client,
+    status: Arc<RwLock<Status>>,
+    interval: Duration,
+    is_closed: Arc<AtomicBool>,
+) {
     info!("Submitting empty transactions");
     loop {
+        if is_closed.load(Ordering::SeqCst) {
+            return;
+        }
         let start_time = Instant::now();
         client
             .submit_all(vec![])
@@ -208,4 +257,12 @@ async fn handle_status_request(
         .body(Body::from(str_status))
         .unwrap();
     Ok(res)
+}
+
+async fn handle_shutdown_signal(notify_close: Arc<Notify>) {
+    signal::ctrl_c()
+        .await
+        .expect("Failed to install CTRL+C signal handler");
+    info!("received a shutdown signal");
+    notify_close.notify_waiters();
 }

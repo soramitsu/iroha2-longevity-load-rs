@@ -17,19 +17,21 @@ impl ValueWrapper {
 impl Distribution<ValueWrapper> for Standard {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> ValueWrapper {
         let value = match rng.gen_range(0..=6) {
-            0 => Value::U32(rng.gen()),
-            1 => Value::U128(rng.gen()),
+            0 => Value::Numeric(NumericValue::U32(rng.gen())),
+            1 => Value::Numeric(NumericValue::U128(rng.gen())),
             2 => Value::Bool(rng.gen()),
             3 => Value::String(format!("hello{}", rng.gen::<usize>())),
             4 => Value::Name(
                 Name::from_str(format!("bob{}", rng.gen::<usize>()).as_str()).expect("Valid name"),
             ),
-            5 => Value::Fixed(Fixed::try_from(rng.gen::<f64>()).expect("Valid float num")),
+            5 => Value::Numeric(NumericValue::Fixed(
+                Fixed::try_from(rng.gen::<f64>()).expect("Valid float num"),
+            )),
             6 => {
                 let len = rng.gen_range(0..=10);
                 let mut vec = Vec::with_capacity(len);
                 for _ in 0..len {
-                    vec.push(Value::U32(rng.gen()));
+                    vec.push(Value::Numeric(NumericValue::U32(rng.gen())));
                 }
                 Value::Vec(vec)
             }

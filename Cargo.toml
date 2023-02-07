@@ -1,6 +1,6 @@
 [package]
 name = "iroha2-longevity-load-rs"
-version = "2.0.0-pre-rc.11"
+version = "2.0.0-pre-rc.13"
 edition = "2021"
 
 [dependencies]
@@ -31,24 +31,24 @@ rand = "0.8.4"
   [dependencies.iroha_client]
   git = "https://github.com/hyperledger/iroha.git"
   branch = "iroha2-dev"
-  version = "2.0.0-pre-rc.11"
+  version = "2.0.0-pre-rc.13"
 
   [dependencies.iroha_data_model]
   git = "https://github.com/hyperledger/iroha.git"
   branch = "iroha2-dev"
-  version = "2.0.0-pre-rc.11"
+  version = "2.0.0-pre-rc.13"
 
   [dependencies.iroha_config]
   git = "https://github.com/hyperledger/iroha.git"
   branch = "iroha2-dev"
-  version = "2.0.0-pre-rc.11"
+  version = "2.0.0-pre-rc.13"
 
   [dependencies.iroha_crypto]
   git = "https://github.com/hyperledger/iroha.git"
   branch = "iroha2-dev"
-  version = "2.0.0-pre-rc.11"
+  version = "2.0.0-pre-rc.13"
 
   [dependencies.iroha_primitives]
   git = "https://github.com/hyperledger/iroha.git"
   branch = "iroha2-dev"
-  version = "2.0.0-pre-rc.11"
+  version = "2.0.0-pre-rc.13"

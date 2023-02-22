@@ -53,26 +53,28 @@ async fn run_oneshot_operation(count: usize, operation: Operation) -> Result<Sta
         let wonderland_id = wonderland_id.clone();
         let client = client.clone();
         let handle = task::spawn(async move {
-            status
-                .write()
-                .expect("Failed to lock to update status")
-                .tx_is_sent();
-            let instructions =
+            let instructions_batch =
                 make_instruction_by_operation(&operation, alice_id, wonderland_id, index);
-            let res = client
-                .submit_all_blocking(instructions)
-                .await
-                .expect("Failed to submit the transaction");
-            let mut guard = status.write().expect("Failed to lock to update status");
-            match res {
-                SubmitBlockingStatus::Committed(_) => {
-                    guard.tx_is_committed();
-                }
-                SubmitBlockingStatus::Rejected(_) => {
-                    guard.tx_is_rejected();
-                }
-                SubmitBlockingStatus::Unknown => guard.tx_is_unknown(),
-            };
+            for instructions in instructions_batch {
+                status
+                    .write()
+                    .expect("Failed to lock to update status")
+                    .tx_is_sent(1);
+                let res = client
+                    .submit_all_blocking(instructions)
+                    .await
+                    .expect("Failed to submit the transaction");
+                let mut guard = status.write().expect("Failed to lock to update status");
+                match res {
+                    SubmitBlockingStatus::Committed(_) => {
+                        guard.tx_is_committed();
+                    }
+                    SubmitBlockingStatus::Rejected(_) => {
+                        guard.tx_is_rejected();
+                    }
+                    SubmitBlockingStatus::Unknown => guard.tx_is_unknown(),
+                };
+            }
         });
 
         operation_handles.push(handle);

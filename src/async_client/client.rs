@@ -6,7 +6,9 @@ use futures_util::stream::StreamExt;
 use hyper::{client::HttpConnector, Client as HyperClient};
 use iroha_client::client::{Client as IrohaClient, ResponseHandler};
 use iroha_crypto::HashOf;
-use iroha_data_model::prelude::*;
+use iroha_data_model::{
+    events::pipeline::PipelineRejectionReason, prelude::*, transaction::TransactionPayload,
+};
 use tokio::{
     spawn,
     sync::{mpsc, oneshot},
@@ -22,16 +24,16 @@ impl Client {
     #[allow(dead_code)]
     pub async fn submit(
         &self,
-        instruction: impl Into<Instruction> + Debug,
-    ) -> Result<HashOf<VersionedSignedTransaction>> {
+        instruction: impl Into<InstructionBox> + Debug,
+    ) -> Result<HashOf<TransactionPayload>> {
         let isi = instruction.into();
         self.submit_all([isi]).await
     }
 
     pub async fn submit_all(
         &self,
-        instructions: impl IntoIterator<Item = Instruction>,
-    ) -> Result<HashOf<VersionedSignedTransaction>> {
+        instructions: impl IntoIterator<Item = InstructionBox>,
+    ) -> Result<HashOf<TransactionPayload>> {
         self.submit_all_with_metadata(instructions, UnlimitedMetadata::new())
             .await
     }
@@ -39,31 +41,31 @@ impl Client {
     #[allow(dead_code)]
     pub async fn submit_with_metadata(
         &self,
-        instruction: Instruction,
+        instruction: InstructionBox,
         metadata: UnlimitedMetadata,
-    ) -> Result<HashOf<VersionedSignedTransaction>> {
+    ) -> Result<HashOf<TransactionPayload>> {
         self.submit_all_with_metadata([instruction], metadata).await
     }
 
     pub async fn submit_all_with_metadata(
         &self,
-        instructions: impl IntoIterator<Item = Instruction>,
+        instructions: impl IntoIterator<Item = InstructionBox>,
         metadata: UnlimitedMetadata,
-    ) -> Result<HashOf<VersionedSignedTransaction>> {
+    ) -> Result<HashOf<TransactionPayload>> {
         self.submit_transaction(
             self.iroha_client
-                .build_transaction(instructions.into(), metadata)?,
+                .build_transaction(instructions, metadata)?,
         )
         .await
     }
 
     pub async fn submit_transaction(
         &self,
-        transaction: SignedTransaction,
-    ) -> Result<HashOf<VersionedSignedTransaction>> {
+        transaction: VersionedSignedTransaction,
+    ) -> Result<HashOf<TransactionPayload>> {
         let (req, hash, resp_handler) = self
             .iroha_client
-            .prepare_transaction_request::<AsyncRequestBuilder>(transaction)?;
+            .prepare_transaction_request::<AsyncRequestBuilder>(&transaction);
         let res = req
             .build()?
             .send(&self.hyper_client)
@@ -76,14 +78,14 @@ impl Client {
     #[allow(dead_code)]
     pub async fn submit_blocking(
         &self,
-        instruction: impl Into<Instruction>,
+        instruction: impl Into<InstructionBox>,
     ) -> Result<SubmitBlockingStatus> {
         self.submit_all_blocking(vec![instruction.into()]).await
     }
 
     pub async fn submit_all_blocking(
         &self,
-        instructions: impl IntoIterator<Item = Instruction>,
+        instructions: impl IntoIterator<Item = InstructionBox>,
     ) -> Result<SubmitBlockingStatus> {
         self.submit_all_blocking_with_metadata(instructions, UnlimitedMetadata::new())
             .await
@@ -91,18 +93,18 @@ impl Client {
 
     pub async fn submit_all_blocking_with_metadata(
         &self,
-        instructions: impl IntoIterator<Item = Instruction>,
+        instructions: impl IntoIterator<Item = InstructionBox>,
         metadata: UnlimitedMetadata,
     ) -> Result<SubmitBlockingStatus> {
         let transaction = self
             .iroha_client
-            .build_transaction(instructions.into(), metadata)?;
+            .build_transaction(instructions, metadata)?;
         self.submit_transaction_blocking(transaction).await
     }
 
     pub async fn submit_transaction_blocking(
         &self,
-        transaction: SignedTransaction,
+        transaction: VersionedSignedTransaction,
     ) -> Result<SubmitBlockingStatus> {
         let iroha_client = self.iroha_client.clone();
         let (event_sender, mut event_receiver) = mpsc::unbounded_channel();
@@ -119,11 +121,11 @@ impl Client {
             while let Some(event) = event_stream.next().await {
                 let event = event.expect("Failed to listen for the event stream.");
                 if let Event::Pipeline(this_event) = event {
-                    match this_event.status {
+                    match this_event.status() {
                         PipelineStatus::Validating => {}
                         PipelineStatus::Rejected(reason) => {
                             return event_sender
-                                .send(SubmitBlockingStatus::Rejected(reason))
+                                .send(SubmitBlockingStatus::Rejected(reason.clone()))
                                 .expect("Failed to send the transaction through event channel.")
                         }
                         PipelineStatus::Committed => {
@@ -154,7 +156,7 @@ impl Client {
 #[derive(Debug)]
 pub enum SubmitBlockingStatus {
     Committed(HashOf<VersionedSignedTransaction>),
-    Rejected(RejectionReason),
+    Rejected(PipelineRejectionReason),
     Unknown,
 }
 

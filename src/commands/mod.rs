@@ -13,7 +13,7 @@ fn make_instruction_by_operation(
     test_account_id: AccountId,
     test_domain_id: DomainId,
     index: usize,
-) -> Vec<Instruction> {
+) -> Vec<InstructionBox> {
     match op {
         Operation::RegisterAccount => {
             let new_account_name = Name::from_str(format!("alice{}", index).as_str())

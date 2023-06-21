@@ -10,7 +10,7 @@ use hyper::{
 };
 use iroha_client::client::Client;
 use iroha_config::client::Configuration;
-use iroha_data_model::prelude::*;
+use iroha_data_model::{isi::InstructionBox, prelude::*};
 use std::{
     collections::HashMap,
     fs::File,
@@ -155,7 +155,7 @@ async fn update_status_according_to_events(
         };
         debug!(event = ?event, "got an event");
         if let Ok(Event::Pipeline(event)) = event {
-            match event.status {
+            match event.status() {
                 PipelineStatus::Validating => {}
                 PipelineStatus::Rejected(_) => {
                     status
@@ -233,7 +233,7 @@ fn submit_empty_transactions(
         }
         let start_time = Instant::now();
         client
-            .submit_all(vec![])
+            .submit_all(Vec::<InstructionBox>::new().into_iter())
             .expect("Failed to submit empty ISI");
         status
             .write()

@@ -70,7 +70,7 @@ impl AsyncRequestBuilder {
 }
 
 impl RequestBuilder for AsyncRequestBuilder {
-    fn new(method: Method, url: impl AsRef<str>) -> Self {
+    fn new(method: Method, url: url::Url) -> Self {
         Self {
             method,
             url: url.as_ref().to_string(),

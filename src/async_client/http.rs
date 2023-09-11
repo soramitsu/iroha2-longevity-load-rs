@@ -80,7 +80,7 @@ impl RequestBuilder for AsyncRequestBuilder {
         }
     }
 
-    fn param<K, V>(mut self, key: K, value: V) -> Self
+    fn param<K, V: ?Sized>(mut self, key: K, value: &V) -> Self
     where
         K: AsRef<str>,
         V: ToString,
@@ -90,7 +90,7 @@ impl RequestBuilder for AsyncRequestBuilder {
         self
     }
 
-    fn header<K, V>(mut self, key: K, value: V) -> Self
+    fn header<K, V: ?Sized>(mut self, key: K, value: &V) -> Self
     where
         K: AsRef<str>,
         V: ToString,

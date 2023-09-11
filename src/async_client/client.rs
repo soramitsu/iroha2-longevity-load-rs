@@ -4,7 +4,7 @@ use super::http::AsyncRequestBuilder;
 use color_eyre::eyre::{eyre, Context, Result};
 use futures_util::stream::StreamExt;
 use hyper::{client::HttpConnector, Client as HyperClient};
-use iroha_client::client::{Client as IrohaClient, ResponseHandler};
+use iroha_client::client::{Client as IrohaClient, QueryResponseHandler};
 use iroha_crypto::HashOf;
 use iroha_data_model::{
     events::pipeline::PipelineRejectionReason, prelude::*, transaction::TransactionPayload,
@@ -63,16 +63,7 @@ impl Client {
         &self,
         transaction: VersionedSignedTransaction,
     ) -> Result<HashOf<TransactionPayload>> {
-        let (req, hash, resp_handler) = self
-            .iroha_client
-            .prepare_transaction_request::<AsyncRequestBuilder>(&transaction);
-        let res = req
-            .build()?
-            .send(&self.hyper_client)
-            .await
-            .wrap_err_with(|| format!("Failed to send transaction with hash {:?}", hash))?;
-        resp_handler.handle(res)?;
-        Ok(hash)
+        self.iroha_client.submit_transaction(&transaction)
     }
 
     #[allow(dead_code)]

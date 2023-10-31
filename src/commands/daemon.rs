@@ -10,7 +10,7 @@ use hyper::{
 };
 use iroha_client::client::Client;
 use iroha_config::client::Configuration;
-use iroha_data_model::{isi::InstructionBox, prelude::*};
+use iroha_data_model::{isi::InstructionExpr, prelude::*};
 use std::{
     collections::HashMap,
     fs::File,
@@ -233,7 +233,7 @@ fn submit_empty_transactions(
         }
         let start_time = Instant::now();
         client
-            .submit_all(Vec::<InstructionBox>::new().into_iter())
+            .submit_all(Vec::<InstructionExpr>::new().into_iter())
             .expect("Failed to submit empty ISI");
         status
             .write()

@@ -31,25 +31,25 @@ url = "2.4.0"
 
   [dependencies.iroha_client]
   git = "https://github.com/hyperledger/iroha.git"
-  branch = "iroha2-stable"
+  branch = "iroha2-dev"
   version = "2.0.0-pre-rc.20"
 
   [dependencies.iroha_data_model]
   git = "https://github.com/hyperledger/iroha.git"
-  branch = "iroha2-stable"
+  branch = "iroha2-dev"
   version = "2.0.0-pre-rc.20"
 
   [dependencies.iroha_config]
   git = "https://github.com/hyperledger/iroha.git"
-  branch = "iroha2-stable"
+  branch = "iroha2-dev"
   version = "2.0.0-pre-rc.20"
 
   [dependencies.iroha_crypto]
   git = "https://github.com/hyperledger/iroha.git"
-  branch = "iroha2-stable"
+  branch = "iroha2-dev"
   version = "2.0.0-pre-rc.20"
 
   [dependencies.iroha_primitives]
   git = "https://github.com/hyperledger/iroha.git"
-  branch = "iroha2-stable"
+  branch = "iroha2-dev"
   version = "2.0.0-pre-rc.20"

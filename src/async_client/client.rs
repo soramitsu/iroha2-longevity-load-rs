@@ -24,7 +24,7 @@ impl Client {
     #[allow(dead_code)]
     pub async fn submit(
         &self,
-        instruction: impl Into<InstructionBox> + Debug,
+        instruction: impl Into<InstructionExpr> + Debug,
     ) -> Result<HashOf<TransactionPayload>> {
         let isi = instruction.into();
         self.submit_all([isi]).await
@@ -32,7 +32,7 @@ impl Client {
 
     pub async fn submit_all(
         &self,
-        instructions: impl IntoIterator<Item = InstructionBox>,
+        instructions: impl IntoIterator<Item = InstructionExpr>,
     ) -> Result<HashOf<TransactionPayload>> {
         self.submit_all_with_metadata(instructions, UnlimitedMetadata::new())
             .await
@@ -41,7 +41,7 @@ impl Client {
     #[allow(dead_code)]
     pub async fn submit_with_metadata(
         &self,
-        instruction: InstructionBox,
+        instruction: InstructionExpr,
         metadata: UnlimitedMetadata,
     ) -> Result<HashOf<TransactionPayload>> {
         self.submit_all_with_metadata([instruction], metadata).await
@@ -49,7 +49,7 @@ impl Client {
 
     pub async fn submit_all_with_metadata(
         &self,
-        instructions: impl IntoIterator<Item = InstructionBox>,
+        instructions: impl IntoIterator<Item = InstructionExpr>,
         metadata: UnlimitedMetadata,
     ) -> Result<HashOf<TransactionPayload>> {
         self.submit_transaction(
@@ -61,7 +61,7 @@ impl Client {
 
     pub async fn submit_transaction(
         &self,
-        transaction: VersionedSignedTransaction,
+        transaction: SignedTransaction,
     ) -> Result<HashOf<TransactionPayload>> {
         self.iroha_client.submit_transaction(&transaction)
     }
@@ -69,14 +69,14 @@ impl Client {
     #[allow(dead_code)]
     pub async fn submit_blocking(
         &self,
-        instruction: impl Into<InstructionBox>,
+        instruction: impl Into<InstructionExpr>,
     ) -> Result<SubmitBlockingStatus> {
         self.submit_all_blocking(vec![instruction.into()]).await
     }
 
     pub async fn submit_all_blocking(
         &self,
-        instructions: impl IntoIterator<Item = InstructionBox>,
+        instructions: impl IntoIterator<Item = InstructionExpr>,
     ) -> Result<SubmitBlockingStatus> {
         self.submit_all_blocking_with_metadata(instructions, UnlimitedMetadata::new())
             .await
@@ -84,7 +84,7 @@ impl Client {
 
     pub async fn submit_all_blocking_with_metadata(
         &self,
-        instructions: impl IntoIterator<Item = InstructionBox>,
+        instructions: impl IntoIterator<Item = InstructionExpr>,
         metadata: UnlimitedMetadata,
     ) -> Result<SubmitBlockingStatus> {
         let transaction = self
@@ -95,7 +95,7 @@ impl Client {
 
     pub async fn submit_transaction_blocking(
         &self,
-        transaction: VersionedSignedTransaction,
+        transaction: SignedTransaction,
     ) -> Result<SubmitBlockingStatus> {
         let iroha_client = self.iroha_client.clone();
         let (event_sender, mut event_receiver) = mpsc::unbounded_channel();
@@ -121,7 +121,7 @@ impl Client {
                         }
                         PipelineStatus::Committed => {
                             return event_sender
-                                .send(SubmitBlockingStatus::Committed(hash.transmute()))
+                                .send(SubmitBlockingStatus::Committed(hash))
                                 .expect("Failed to send the transaction through event channel.")
                         }
                     }
@@ -146,7 +146,7 @@ impl Client {
 
 #[derive(Debug)]
 pub enum SubmitBlockingStatus {
-    Committed(HashOf<VersionedSignedTransaction>),
+    Committed(HashOf<SignedTransaction>),
     Rejected(PipelineRejectionReason),
     Unknown,
 }
